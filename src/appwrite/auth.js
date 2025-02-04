@@ -1,7 +1,6 @@
 import conf from '../conf/conf.js';
 import { Client, Account, ID } from "appwrite";
 
-
 export class AuthService {
     client = new Client();
     account;
@@ -11,53 +10,55 @@ export class AuthService {
             .setEndpoint(conf.appwriteUrl)
             .setProject(conf.appwriteProjectId);
         this.account = new Account(this.client);
-            
     }
 
-    async createAccount({email, password, name}) {
+    async createAccount({ email, password, name }) {
         try {
             const userAccount = await this.account.create(ID.unique(), email, password, name);
             if (userAccount) {
-                // call another method
-                return this.login({email, password});
+                return this.login({ email, password });
             } else {
-               return  userAccount;
+                return userAccount;
             }
         } catch (error) {
+            //console.error("Error creating account:", error);
             throw error;
         }
     }
 
-    async login({email, password}) {
+    async login({ email, password }) {
         try {
-            return await this.account.createEmailSession(email, password);
+            console.log("Attempting login with", email, password);
+            const session = await this.account.createEmailSession(email, password);
+            console.log('Login successful', session);
+            return session;
         } catch (error) {
-            throw error;
+            console.error("Login failed:", error);
+            throw new Error(`Login failed: ${error.message}`);
         }
     }
 
     async getCurrentUser() {
         try {
-            return await this.account.get();
+            const user = await this.account.get();
+            console.log("Current user:", user);
+            return user;
         } catch (error) {
-            console.log("Appwrite serive :: getCurrentUser :: error", error);
+            //console.error("Error fetching current user:", error);
+            return null;
         }
-
-        return null;
     }
 
     async logout() {
-
         try {
             await this.account.deleteSessions();
+            console.log("Logged out successfully");
         } catch (error) {
-            console.log("Appwrite serive :: logout :: error", error);
+            console.error("Error logging out:", error);
         }
     }
 }
 
 const authService = new AuthService();
 
-export default authService
-
-
+export default authService;
