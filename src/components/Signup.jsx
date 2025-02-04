@@ -22,7 +22,11 @@ function Signup() {
                 navigate("/")
             }
         } catch (error) {
-            setError(error.message)
+            // Log full error details to inspect the issue
+            console.error('Network request failed:', error);
+    
+            // Display user-friendly error message
+            setError("Network request failed. Please try again later.");
         }
     }
 
