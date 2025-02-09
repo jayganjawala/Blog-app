@@ -10,37 +10,47 @@ export default function PostForm({ post }) {
         defaultValues: {
             title: post?.title || "",
             slug: post?.$id || "",
+            featuredimage: post?.featuredimage || "",
             content: post?.content || "",
             status: post?.status || "active",
         },
     });
 
     const navigate = useNavigate();
-    const userData = useSelector((state) => state.auth.userData);
+    const userData = useSelector((state) => state.auth.userData);  // Ensure userData is pulled from Redux store
+
+    // Log user data for debugging
+    console.log("userData: ", userData);  // Log userData to confirm it's populated correctly
 
     const submit = async (data) => {
+        // Log user data for debugging
+        console.log("userData: ", userData); 
+        
         if (post) {
-            const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
+            const file = data.image?.[0] ? await appwriteService.uploadFile(data.image[0]) : null;
 
             if (file) {
-                appwriteService.deleteFile(post.featuredImage);
+                appwriteService.deleteFile(post.featuredimage);  // Delete the old image if a new one is uploaded
             }
 
             const dbPost = await appwriteService.updatePost(post.$id, {
                 ...data,
-                featuredImage: file ? file.$id : undefined,
+                featuredimage: file ? file.$id : post.featuredimage, // Ensure the field name matches the Appwrite DB
             });
 
             if (dbPost) {
                 navigate(`/post/${dbPost.$id}`);
             }
         } else {
-            const file = await appwriteService.uploadFile(data.image[0]);
+            const file = await appwriteService.uploadFile(data.image?.[0]);
 
             if (file) {
-                const fileId = file.$id;
-                data.featuredImage = fileId;
-                const dbPost = await appwriteService.createPost({ ...data, userId: userData.$id });
+                data.featuredimage = file?.$id;  // Make sure we store the file ID correctly
+
+                const dbPost = await appwriteService.createPost({
+                    ...data,
+                    userid: userData?.$id,  // Pass the user ID for post creation
+                });
 
                 if (dbPost) {
                     navigate(`/post/${dbPost.$id}`);
@@ -98,15 +108,17 @@ export default function PostForm({ post }) {
                     accept="image/png, image/jpg, image/jpeg, image/gif"
                     {...register("image", { required: !post })}
                 />
-                {post && (
-                    <div className="w-full mb-4">
-                        <img
-                            src={appwriteService.getFilePreview(post.featuredImage)}
-                            alt={post.title}
-                            className="rounded-lg"
-                        />
-                    </div>
-                )}
+                    {post && post.featuredimage && post.featuredimage !== "" && (
+                        <div className="w-full mb-4">
+                            <img
+                                // Only try to load the image preview if the file ID is valid
+                                src={appwriteService.getFilePreview(post.featuredimage)}
+                                alt={post.title}
+                                className="rounded-lg"
+                            />
+                        </div>
+                    )}
+
                 <Select
                     options={["active", "inactive"]}
                     label="Status"

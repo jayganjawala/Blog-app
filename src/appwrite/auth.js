@@ -13,6 +13,7 @@ export class AuthService {
     }
 
     async createAccount({ email, password, name }) {
+        // eslint-disable-next-line no-useless-catch
         try {
             const userAccount = await this.account.create(ID.unique(), email, password, name);
             if (userAccount) {
